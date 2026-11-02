@@ -15,25 +15,25 @@
   "categories": ["entertainment", "lifestyle"],
   "icons": [
     {
-      "src": "IMG-20261102-WA2914.jpg",
+      "src": "IMG-20261102-WA3272.jpg",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "IMG-20261102-WA2914.jpg",
+      "src": "IMG-20261102-WA3272.jpg",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "IMG-20261102-WA2914.jpg",
+      "src": "IMG-20261102-WA3272.jpg",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "IMG-20261102-WA2914.jpg",
+      "src": "IMG-20261102-WA3272.jpg",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -47,7 +47,7 @@
       "url": "./index.html",
       "icons": [
         {
-          "src": "IMG-20261102-WA2914.jpg",
+          "src": "IMG-20261102-WA3272.jpg",
           "sizes": "96x96",
           "type": "image/png"
         }
