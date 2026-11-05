@@ -1,16 +1,15 @@
 /* =========================================================
    CINEVAULT — CONFIG
-   API keys, storage keys, constants, and global state
 ========================================================= */
 
-/* =========================================================
-   🔑 API KEYS
-========================================================= */
+// ❌ YAHAN SE API KEY HATA DI HAI (Ab ye Render par hai)
+const TMDB_KEY = "SECURED_ON_RENDER";
 
-// TMDB API Key (v3)
-const TMDB_KEY = "bcd1f010c0ef58b759dae2f30cfb7314";
+// ✅ RENDER BACKEND URL (Apna Render URL yahan daalein)
+const TMDB_API_URL = "https://cinevault-api.onrender.com/api/tmdb"; 
+// (Agar aapka render URL alag hai, toh use yahan replace kar dein)
 
-// Firebase Configuration
+// Firebase Configuration (Yeh public hota hai, isme koi dikkat nahi)
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBXbtBNAie8rAWEOYqJ6Ff5--F_2pZhXG4",
   authDomain: "cinevault-bd449.firebaseapp.com",
@@ -20,9 +19,6 @@ const FIREBASE_CONFIG = {
   appId: "1:974050580946:web:62c6a55ea7f077618cd00b"
 };
 
-/* =========================================================
-   📦 STORAGE KEYS
-========================================================= */
 const STORAGE_KEYS = {
   VAULT: "cv_vault_v4",
   COLLECTIONS: "cv_collections_v4",
@@ -32,9 +28,6 @@ const STORAGE_KEYS = {
   WATCH_HISTORY: "cv_watch_history_v4"
 };
 
-/* =========================================================
-   🎬 MOVIE STATUS OPTIONS
-========================================================= */
 const STATUS_OPTIONS = {
   want:     { label: "🎯 Want",     icon: "🎯" },
   watching: { label: "▶️ Watching", icon: "▶️" },
@@ -42,9 +35,6 @@ const STATUS_OPTIONS = {
   dropped:  { label: "⏸️ Dropped",  icon: "⏸️" }
 };
 
-/* =========================================================
-   🏆 ACHIEVEMENTS
-========================================================= */
 const ACHIEVEMENTS_LIST = [
   { id: "first_movie",     name: "First Steps",           icon: "🎬", desc: "Add your first movie",         check: v => v.length >= 1 },
   { id: "first_watch",     name: "Lights, Camera, Action",icon: "🎥", desc: "Mark first movie as watched",  check: v => v.filter(m => m.status === "watched").length >= 1 },
@@ -67,9 +57,6 @@ const ACHIEVEMENTS_LIST = [
   { id: "reviewer",        name: "The Reviewer",          icon: "✍️", desc: "Add notes to 10 movies",       check: v => v.filter(m => m.notes && m.notes.length > 0).length >= 10 }
 ];
 
-/* =========================================================
-   ⚙️ APP CONFIG
-========================================================= */
 const APP_CONFIG = {
   name: "CineVault",
   version: "5.0.0",
@@ -79,9 +66,6 @@ const APP_CONFIG = {
   toastDuration: 2400
 };
 
-/* =========================================================
-   🔥 READY CHECKS
-========================================================= */
 const FIREBASE_READY = (
   FIREBASE_CONFIG.apiKey &&
   !FIREBASE_CONFIG.apiKey.startsWith("YOUR_") &&
@@ -89,24 +73,15 @@ const FIREBASE_READY = (
   !FIREBASE_CONFIG.projectId.startsWith("YOUR_")
 );
 
-const TMDB_READY = (
-  TMDB_KEY &&
-  TMDB_KEY.length > 20 &&
-  !TMDB_KEY.startsWith("PASTE_") &&
-  !TMDB_KEY.startsWith("YOUR_")
-);
+// TMDB_READY ab true rahega kyunki backend URL set hai
+const TMDB_READY = true; 
 
-/* =========================================================
-   📊 GLOBAL STATE
-========================================================= */
 const CV = {
-  // Core data
   vault: [],
   collections: [],
   achievements: {},
   watchHistory: {},
 
-  // UI state
   currentFilter: "all",
   currentSort: "recent",
   currentQuery: "",
@@ -117,7 +92,6 @@ const CV = {
   editingId: null,
   addToCollectionMovieId: null,
 
-  // Advanced filters
   advancedFilters: {
     genre: "",
     minYear: null,
@@ -126,23 +100,18 @@ const CV = {
     runtime: ""
   },
 
-  // Firebase
   firebaseAuth: null,
   firebaseDb: null,
   firebaseModules: null,
   currentUser: null,
   cloudSaveTimer: null,
-
-  // Internals
   toastTimer: null
 };
 
-/* =========================================================
-   🌍 EXPOSE TO WINDOW
-========================================================= */
 window.CV = CV;
 window.CV_CONFIG = {
   TMDB_KEY,
+  TMDB_API_URL,
   FIREBASE_CONFIG,
   STORAGE_KEYS,
   STATUS_OPTIONS,
@@ -151,7 +120,3 @@ window.CV_CONFIG = {
   FIREBASE_READY,
   TMDB_READY
 };
-
-console.log("🎬 CineVault Config loaded");
-console.log("   📊 TMDB:", TMDB_READY ? "✓ ready" : "✗ not configured");
-console.log("   🔥 Firebase:", FIREBASE_READY ? "✓ ready" : "✗ not configured");
