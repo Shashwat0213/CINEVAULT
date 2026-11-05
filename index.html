@@ -760,46 +760,6 @@
 <!-- CLOUD STATUS -->
 <div class="cloud-status" id="cloudStatus">☁ Cloud ready</div>
 
-<!-- ========================================== -->
-<!-- FIREBASE AUTH LOGIC -->
-<!-- ========================================== -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBXbtBNAie8rAWEOYqJ6Ff5--F_2pZhXG4",
-    authDomain: "cinevault-bd449.firebaseapp.com",
-    projectId: "cinevault-bd449",
-    storageBucket: "cinevault-bd449.firebasestorage.app",
-    messagingSenderId: "974050580946",
-    appId: "1:974050580946:web:62c6a55ea7f077618cd00b"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-
-  window.CV_REAL_AUTH = {
-    login: async (email, pass) => await signInWithEmailAndPassword(auth, email, pass),
-    signup: async (email, pass, name) => {
-      const cred = await createUserWithEmailAndPassword(auth, email, pass);
-      if (name) await updateProfile(cred.user, { displayName: name });
-      return cred;
-    },
-    google: async () => {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-      return await signInWithPopup(auth, provider);
-    },
-    logout: async () => await signOut(auth)
-  };
-
-  onAuthStateChanged(auth, (user) => {
-    window.CV_USER = user;
-    window.dispatchEvent(new Event('authStateChanged'));
-  });
-</script>
-
 <!-- SCRIPTS -->
 <script src="scripts/config.js"></script>
 <script src="scripts/api.js"></script>
