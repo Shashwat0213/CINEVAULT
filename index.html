@@ -136,7 +136,7 @@
       <button class="btn btn-icon" id="wallViewBtn" title="Toggle Wall View">🌌</button>
       <button class="btn btn-icon" id="themeToggle" title="Light/Dark">🌙</button>
       
-      <!-- USER PROFILE -->
+      <!-- USER PROFILE (Login hone ke baad dikhega) -->
       <div class="auth-user" id="authUserBox" style="display:none; align-items:center; gap:10px; margin-left:10px;">
         <span class="auth-avatar" id="authAvatar" style="width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#ffb800,#a855f7);color:#0a0614;font-weight:800;">U</span>
         <div style="display:flex;flex-direction:column;line-height:1.2;">
@@ -761,7 +761,7 @@
 <div class="cloud-status" id="cloudStatus">☁ Cloud ready</div>
 
 <!-- ========================================== -->
-<!-- FIREBASE AUTH LOGIC (Fixes Login & Google) -->
+<!-- FIREBASE AUTH LOGIC -->
 <!-- ========================================== -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -779,7 +779,6 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  // EXPOSE AUTH FUNCTIONS TO SILENT-BUTTON.JS
   window.CV_REAL_AUTH = {
     login: async (email, pass) => await signInWithEmailAndPassword(auth, email, pass),
     signup: async (email, pass, name) => {
@@ -795,15 +794,13 @@
     logout: async () => await signOut(auth)
   };
 
-  // AUTH STATE LISTENER
   onAuthStateChanged(auth, (user) => {
     window.CV_USER = user;
-    // Dispatch event to update button text (SIGN UP vs ENTER)
     window.dispatchEvent(new Event('authStateChanged'));
   });
 </script>
 
-<!-- BAaki Scripts -->
+<!-- SCRIPTS -->
 <script src="scripts/config.js"></script>
 <script src="scripts/api.js"></script>
 <script src="scripts/auth.js"></script>
@@ -819,7 +816,6 @@
 <script src="scripts/custom.js"></script>
 <script src="scripts/ads.js"></script>
 <script src="scripts/features.js"></script>
-<!-- Silent Button Script -->
 <script src="scripts/silent-button.js"></script>
 
 <!-- Service Worker -->
