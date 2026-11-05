@@ -25,7 +25,6 @@
 <link rel="stylesheet" href="styles/pro.css">
 <link rel="stylesheet" href="styles/custom.css">
 <link rel="stylesheet" href="styles/ads.css">
-<!-- Naya CSS -->
 <link rel="stylesheet" href="styles/silent-button.css">
 
 <style>
@@ -90,14 +89,14 @@
   </div>
 </div>
 
-<!-- NAYA PREMIUM AUTH GATEWAY MODAL -->
+<!-- PREMIUM AUTH GATEWAY MODAL -->
 <div class="gateway-modal" id="authGatewayModal">
   <div class="gateway-card">
     <button class="gateway-close" id="gatewayClose">✕</button>
     
     <div id="gatewayFormContainer">
-      <h2 class="gateway-title">Join CineVault</h2>
-      <p class="gateway-sub">Create an account to start tracking your universe.</p>
+      <h2 class="gateway-title" id="gatewayTitle">Join CineVault</h2>
+      <p class="gateway-sub" id="gatewaySub">Create an account to start tracking your universe.</p>
       
       <div id="gatewayNameField" style="display:none;">
         <input type="text" id="gatewayName" class="gateway-input" placeholder="Your Name">
@@ -115,7 +114,7 @@
       </button>
       
       <div class="gateway-toggle">
-        Already have an account? <span id="gatewaySwitchBtn">Login</span>
+        <span id="gatewayToggleText">Already have an account? </span><span id="gatewaySwitchBtn">Login</span>
       </div>
     </div>
   </div>
@@ -136,13 +135,22 @@
       <button class="btn btn-icon" id="calendarBtn" title="Calendar">📅</button>
       <button class="btn btn-icon" id="wallViewBtn" title="Toggle Wall View">🌌</button>
       <button class="btn btn-icon" id="themeToggle" title="Light/Dark">🌙</button>
+      
+      <!-- USER PROFILE (Login hone ke baad dikhega) -->
+      <div class="auth-user" id="authUserBox" style="display:none; align-items:center; gap:10px; margin-left:10px;">
+        <span class="auth-avatar" id="authAvatar" style="width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#ffb800,#a855f7);color:#0a0614;font-weight:800;">U</span>
+        <div style="display:flex;flex-direction:column;line-height:1.2;">
+          <strong id="authUserName" style="font-size:.8rem;">User</strong>
+          <span id="authStatus" style="font-size:.6rem;color:#22c55e;font-weight:700;">Synced</span>
+        </div>
+        <button class="btn btn-sm" id="authLogoutBtn" style="padding:6px 10px;font-size:.65rem;border-color:#ef4444;color:#ef4444;">Logout</button>
+      </div>
+      
       <button class="btn" id="manualBtn">➕ Add Manually</button>
     </div>
   </header>
 
-  <!-- ========================================== -->
-  <!-- NAYA SILENT BUTTON (Logo ke theek baad)    -->
-  <!-- ========================================== -->
+  <!-- SILENT BUTTON (Gateway) -->
   <div class="cv-signup-wrapper" id="gatewayButtonWrapper">
     <div class="stage">
       <div class="btn" id="cv-silent-btn" role="button" tabindex="0" aria-label="Sign up or Enter">
@@ -173,14 +181,12 @@
               <path class="flapc" d="M-11,-5.5 L0,2.5 L11,-5.5"/>
             </g></svg></div>
           </div>
-          <!-- Yahan text change hoga JS se (SIGN UP ya ENTER) -->
           <div class="label" id="cv-btn-label">SIGN UP</div>
           <div class="prints" id="cv-prints"></div>
         </div>
       </div>
     </div>
   </div>
-  <!-- ========================================== -->
 
   <!-- HERO -->
   <section class="hero" id="mainHeroSection">
@@ -198,22 +204,6 @@
       <button class="btn" id="heroRandomBtn">🎲 Random Pick</button>
     </div>
   </section>
-
-  <!-- AUTH BAR (Purana wala) -->
-  <div class="auth-bar">
-    <div class="auth-user" id="authUserBox">
-      <span class="auth-avatar" id="authAvatar">U</span>
-      <div class="auth-info">
-        <strong id="authUserName">User</strong>
-        <span class="auth-status" id="authStatus">Local</span>
-      </div>
-      <button class="btn btn-sm" id="shareBtn" title="Share vault">🔗</button>
-      <button class="btn btn-sm" id="exportBtn" title="Export data">⬇</button>
-      <button class="btn btn-sm" id="importBtn" title="Import data">⬆</button>
-      <button class="btn btn-sm" id="authLogoutBtn">Logout</button>
-    </div>
-    <button class="btn btn-primary" id="authOpenBtn">👤 Login / Sign Up</button>
-  </div>
 
   <!-- THEME PICKER -->
   <section class="theme-picker">
@@ -613,42 +603,6 @@
   </div>
 </div>
 
-<!-- AUTH MODAL (Purana wala) -->
-<div class="auth-overlay" id="authOverlay" role="dialog" aria-hidden="true">
-  <div class="auth-card">
-    <button class="auth-close" id="authCloseBtn">×</button>
-    <div class="auth-brand">🎬 CineVault Account</div>
-    <h2 id="authTitle">Welcome Back</h2>
-    <p id="authSubtitle">Sign in to sync your vault across devices.</p>
-    <div class="auth-tabs">
-      <button class="auth-tab active" data-auth-tab="login">Login</button>
-      <button class="auth-tab" data-auth-tab="signup">Create Account</button>
-    </div>
-    <form class="auth-form" id="authForm">
-      <div class="auth-field" id="authNameField" style="display:none">
-        <label for="authName">Display Name</label>
-        <input id="authName" maxlength="24" placeholder="Your name">
-      </div>
-      <div class="auth-field">
-        <label for="authEmail">Email</label>
-        <input id="authEmail" type="email" required placeholder="you@example.com" autocomplete="email">
-      </div>
-      <div class="auth-field">
-        <label for="authPassword">Password</label>
-        <input id="authPassword" type="password" minlength="6" required placeholder="Minimum 6 characters" autocomplete="current-password">
-      </div>
-      <div class="auth-message" id="authMessage"></div>
-      <button class="auth-submit" id="authSubmit" type="submit">Login</button>
-    </form>
-    <div class="auth-divider">OR</div>
-    <button class="google-btn" id="googleSignInBtn" type="button">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
-      Continue with Google
-    </button>
-    <div class="auth-note">Your account uses Firebase Authentication. Your vault syncs across devices automatically.</div>
-  </div>
-</div>
-
 <!-- COLLECTIONS MODAL -->
 <div class="modal" id="collectionsModal" role="dialog" aria-hidden="true">
   <div class="modal-box" style="max-width:640px">
@@ -771,7 +725,7 @@
   </div>
 </div>
 
-<!-- RELEASE CALENDAR MODAL (Phase 5) -->
+<!-- RELEASE CALENDAR MODAL -->
 <div class="modal" id="releaseCalendarModal" role="dialog" aria-hidden="true">
   <div class="modal-box" style="max-width:780px">
     <button class="modal-close" id="releaseCalendarClose">✕</button>
@@ -782,7 +736,7 @@
   </div>
 </div>
 
-<!-- YEARLY WRAP-UP MODAL (Phase 6) -->
+<!-- YEARLY WRAP-UP MODAL -->
 <div class="modal" id="wrapUpModal" role="dialog" aria-hidden="true">
   <div class="modal-box" style="max-width:700px">
     <button class="modal-close" id="wrapUpClose">✕</button>
@@ -790,7 +744,7 @@
   </div>
 </div>
 
-<!-- SMART COLLECTIONS MODAL (Phase 7) -->
+<!-- SMART COLLECTIONS MODAL -->
 <div class="modal" id="smartCollectionsModal" role="dialog" aria-hidden="true">
   <div class="modal-box" style="max-width:640px">
     <button class="modal-close" id="smartCollectionsClose">✕</button>
@@ -822,7 +776,7 @@
 <script src="scripts/custom.js"></script>
 <script src="scripts/ads.js"></script>
 <script src="scripts/features.js"></script>
-<!-- Naya Button JS -->
+<!-- Naya Silent Button Script -->
 <script src="scripts/silent-button.js"></script>
 
 <!-- Service Worker -->
