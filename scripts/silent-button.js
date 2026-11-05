@@ -1,5 +1,5 @@
 /* =========================================================
-   CINEVAULT SILENT BUTTON + GATEWAY + AUTH LOGIC
+   CINEVAULT SILENT BUTTON + GATEWAY UI
 ========================================================= */
 document.addEventListener("DOMContentLoaded", function() {
   const btn = document.getElementById('cv-silent-btn');
@@ -10,19 +10,19 @@ document.addEventListener("DOMContentLoaded", function() {
   const grainEl = document.getElementById('cv-grain');
   const stage = document.querySelector('.cv-signup-wrapper .stage');
   
-  // Gateway Auth Modal Elements
+  // Gateway UI Elements
   const gatewayModal = document.getElementById('authGatewayModal');
   const gatewayClose = document.getElementById('gatewayClose');
-  const gatewaySubmit = document.getElementById('gatewaySubmitBtn');
   const gatewaySwitch = document.getElementById('gatewaySwitchBtn');
   const gatewayToggleText = document.getElementById('gatewayToggleText');
   const gatewayNameField = document.getElementById('gatewayNameField');
   const gatewayTitle = document.getElementById('gatewayTitle');
   const gatewaySub = document.getElementById('gatewaySub');
-  const gatewayGoogleBtn = document.getElementById('gatewayGoogleBtn');
+  const gatewaySubmit = document.getElementById('gatewaySubmitBtn');
   
   let isLoginMode = false;
 
+  // Toggle UI between Login and Signup
   if (gatewaySwitch) {
     gatewaySwitch.addEventListener('click', () => {
       if(window.CV_SOUNDS) window.CV_SOUNDS.play('click', 0.2);
@@ -45,6 +45,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
+  // Close Gateway
   if (gatewayClose) {
     gatewayClose.addEventListener('click', () => {
       gatewayModal.classList.remove('open');
@@ -52,106 +53,19 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // EMAIL/PASS LOGIN
-  if (gatewaySubmit) {
-    gatewaySubmit.addEventListener('click', async () => {
-      const email = document.getElementById('gatewayEmail').value.trim();
-      const password = document.getElementById('gatewayPassword').value;
-      const name = document.getElementById('gatewayName').value.trim();
-      
-      if (!email || !password) {
-        if(window.CV_APP) window.CV_APP.toast("Please enter email and password.", true);
-        return;
-      }
-      
-      gatewaySubmit.textContent = "Please wait...";
-      gatewaySubmit.disabled = true;
-
-      try {
-        // Wait for auth to load if not ready (max 3 seconds)
-        let retries = 0;
-        while (!window.CV_REAL_AUTH && retries < 30) {
-          await new Promise(r => setTimeout(r, 100));
-          retries++;
-        }
-
-        if (!window.CV_REAL_AUTH) throw new Error("Network issue. Please refresh.");
-
-        if (isLoginMode) {
-          await window.CV_REAL_AUTH.login(email, password);
-        } else {
-          await window.CV_REAL_AUTH.signup(email, password, name);
-        }
-        
-        if(window.CV_SOUNDS) window.CV_SOUNDS.play('success', 0.4);
-        gatewayModal.classList.remove('open');
-        window.location.reload(); 
-      } catch (err) {
-        let msg = err.message.replace("Firebase: ", "");
-        if(window.CV_APP) window.CV_APP.toast("❌ " + msg, true);
-      } finally {
-        gatewaySubmit.textContent = isLoginMode ? "Login" : "Sign Up";
-        gatewaySubmit.disabled = false;
-      }
-    });
-  }
-
-  // GOOGLE LOGIN
-  if (gatewayGoogleBtn) {
-    gatewayGoogleBtn.addEventListener('click', async () => {
-      if(window.CV_SOUNDS) window.CV_SOUNDS.play('click', 0.2);
-      const originalText = gatewayGoogleBtn.innerHTML;
-      gatewayGoogleBtn.innerHTML = "Opening Google...";
-      
-      try {
-        let retries = 0;
-        while (!window.CV_REAL_AUTH && retries < 30) {
-          await new Promise(r => setTimeout(r, 100));
-          retries++;
-        }
-        
-        if (!window.CV_REAL_AUTH) throw new Error("Auth system not ready. Please refresh the page.");
-
-        await window.CV_REAL_AUTH.google();
-        if(window.CV_SOUNDS) window.CV_SOUNDS.play('success', 0.4);
-        gatewayModal.classList.remove('open');
-        window.location.reload();
-      } catch (err) {
-        let msg = err.message.replace("Firebase: ", "");
-        if(window.CV_APP) window.CV_APP.toast("❌ " + msg, true);
-        gatewayGoogleBtn.innerHTML = originalText;
-      }
-    });
-  }
-
-  // AUTH STATE (Update Button Text)
+  // Auth State Update (Reads from auth.js global variable)
   window.addEventListener('authStateChanged', () => {
     const authBox = document.getElementById('authUserBox');
-    // Check if user exists in Firebase
     if (window.CV_USER) { 
       label.textContent = "ENTER";
       btn.setAttribute('aria-label', 'Enter CineVault');
       if (authBox) authBox.style.display = "flex";
-      if (document.getElementById('authUserName') && window.CV_USER.displayName) {
-        document.getElementById('authUserName').textContent = window.CV_USER.displayName;
-      }
     } else {
       label.textContent = "SIGN UP";
       btn.setAttribute('aria-label', 'Sign up');
       if (authBox) authBox.style.display = "none";
     }
   });
-
-  // LOGOUT
-  const logoutBtn = document.getElementById('authLogoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      if (window.CV_REAL_AUTH) {
-        await window.CV_REAL_AUTH.logout();
-        window.location.reload();
-      }
-    });
-  }
 
   /* =========================================================
      BUTTON ANIMATION LOGIC (Grain, Potion, Fingerprint)
@@ -266,6 +180,7 @@ document.addEventListener("DOMContentLoaded", function() {
       clearTimeout(sentTimer);
       sentTimer=setTimeout(()=>btn.classList.remove('sent'),480);
       
+      // IF LOGGED IN -> SCROLL, ELSE -> SHOW GATEWAY MODAL
       if (window.CV_USER) {
         document.getElementById('mainHeroSection').scrollIntoView({ behavior: 'smooth' });
         if(window.CV_APP && window.CV_APP.toast) window.CV_APP.toast("Welcome back to CineVault! 🍿");
