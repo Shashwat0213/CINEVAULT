@@ -1,5 +1,5 @@
 /* =========================================================
-   CINEVAULT SILENT BUTTON LOGIC + GATEWAY
+   CINEVAULT SILENT BUTTON + GATEWAY + AUTH LOGIC
 ========================================================= */
 document.addEventListener("DOMContentLoaded", function() {
   const btn = document.getElementById('cv-silent-btn');
@@ -15,15 +15,18 @@ document.addEventListener("DOMContentLoaded", function() {
   const gatewayClose = document.getElementById('gatewayClose');
   const gatewaySubmit = document.getElementById('gatewaySubmitBtn');
   const gatewaySwitch = document.getElementById('gatewaySwitchBtn');
+  const gatewayToggleText = document.getElementById('gatewayToggleText');
   const gatewayNameField = document.getElementById('gatewayNameField');
-  const gatewayTitle = document.querySelector('.gateway-title');
-  const gatewaySub = document.querySelector('.gateway-sub');
+  const gatewayTitle = document.getElementById('gatewayTitle');
+  const gatewaySub = document.getElementById('gatewaySub');
   
   let isLoginMode = false;
 
   // Toggle between Login and Signup in Gateway
   if (gatewaySwitch) {
     gatewaySwitch.addEventListener('click', () => {
+      if(window.CV_SOUNDS) window.CV_SOUNDS.play('click', 0.2);
+      
       isLoginMode = !isLoginMode;
       if (isLoginMode) {
         gatewayTitle.textContent = "Welcome Back";
@@ -31,14 +34,14 @@ document.addEventListener("DOMContentLoaded", function() {
         gatewaySubmit.textContent = "Login";
         gatewayNameField.style.display = "none";
         gatewaySwitch.textContent = "Sign Up";
-        gatewaySwitch.previousSibling.textContent = "Don't have an account? ";
+        gatewayToggleText.textContent = "Don't have an account? ";
       } else {
         gatewayTitle.textContent = "Join CineVault";
         gatewaySub.textContent = "Create an account to start tracking your universe.";
         gatewaySubmit.textContent = "Sign Up";
         gatewayNameField.style.display = "block";
         gatewaySwitch.textContent = "Login";
-        gatewaySwitch.previousSibling.textContent = "Already have an account? ";
+        gatewayToggleText.textContent = "Already have an account? ";
       }
     });
   }
@@ -47,6 +50,7 @@ document.addEventListener("DOMContentLoaded", function() {
   if (gatewayClose) {
     gatewayClose.addEventListener('click', () => {
       gatewayModal.classList.remove('open');
+      if(window.CV_SOUNDS) window.CV_SOUNDS.play('click', 0.2);
     });
   }
 
@@ -58,7 +62,7 @@ document.addEventListener("DOMContentLoaded", function() {
       const name = document.getElementById('gatewayName').value;
       
       if (!email || !password) {
-        alert("Please enter email and password.");
+        if(window.CV_APP) window.CV_APP.toast("Please enter email and password.", true);
         return;
       }
       
@@ -78,13 +82,14 @@ document.addEventListener("DOMContentLoaded", function() {
           }
           
           gatewayModal.classList.remove('open');
-          window.location.reload(); // Quick refresh to load state
+          if(window.CV_SOUNDS) window.CV_SOUNDS.play('success', 0.4);
+          
+          setTimeout(() => window.location.reload(), 800); 
         } else {
-          // Fallback if Firebase not ready
-          alert("Auth system loading. Please try again.");
+          if(window.CV_APP) window.CV_APP.toast("Auth system loading. Please try again.", true);
         }
       } catch (err) {
-        alert("Error: " + err.message);
+        if(window.CV_APP) window.CV_APP.toast("Error: " + err.message, true);
       } finally {
         gatewaySubmit.textContent = isLoginMode ? "Login" : "Sign Up";
         gatewaySubmit.disabled = false;
@@ -92,20 +97,22 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // Firebase Auth State Check (Change Button Text)
+  // Firebase Auth State Check
   function updateButtonState() {
+    const authBox = document.getElementById('authUserBox');
     if (window.CV && window.CV.currentUser) {
       label.textContent = "ENTER";
       btn.setAttribute('aria-label', 'Enter CineVault');
+      if (authBox) authBox.style.display = "flex";
     } else {
       label.textContent = "SIGN UP";
       btn.setAttribute('aria-label', 'Sign up');
+      if (authBox) authBox.style.display = "none";
     }
   }
   
-  // Listen for auth changes globally
   window.addEventListener('authStateChanged', updateButtonState);
-  setTimeout(updateButtonState, 1500); // Initial check after load
+  setTimeout(updateButtonState, 1500); 
 
   /* =========================================================
      BUTTON ANIMATION LOGIC (Grain, Potion, Fingerprint)
@@ -214,16 +221,18 @@ document.addEventListener("DOMContentLoaded", function() {
       addPrint(p.x,p.y,-35+rnd()*70,3000);
       potion.burst();
       btn.classList.add('sent');
+      
+      // SOUND EFFECT YAHAN LAGAYA HAI
+      if(window.CV_SOUNDS && window.CV_SOUNDS.play) window.CV_SOUNDS.play('whoosh', 0.3);
+
       clearTimeout(sentTimer);
       sentTimer=setTimeout(()=>btn.classList.remove('sent'),480);
       
-      // MAGIC HAPPENS HERE
+      // IF LOGGED IN -> SCROLL, ELSE -> SHOW GATEWAY
       if (window.CV && window.CV.currentUser) {
-        // Agar user logged in hai, toh andar bhej do
         document.getElementById('mainHeroSection').scrollIntoView({ behavior: 'smooth' });
         if(window.CV_APP && window.CV_APP.toast) window.CV_APP.toast("Welcome back to CineVault! 🍿");
       } else {
-        // Agar naya user hai, toh Gateway Auth Modal kholo
         setTimeout(() => {
           gatewayModal.classList.add('open');
         }, 400);
@@ -240,4 +249,16 @@ document.addEventListener("DOMContentLoaded", function() {
   btn.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){if(!pressed){pressed=true;btn.classList.add('press');setState()}e.preventDefault()}});
   btn.addEventListener('keyup',e=>{if((e.key===' '||e.key==='Enter')&&pressed)release(true,null)});
   btn.addEventListener('contextmenu',e=>e.preventDefault());
+  
+  // LOGOUT HANDLING
+  const logoutBtn = document.getElementById('authLogoutBtn');
+  if(logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      if(window.CV_AUTH && window.CV_AUTH.handleLogout) {
+        window.CV_AUTH.handleLogout().then(() => {
+          window.location.reload();
+        });
+      }
+    });
+  }
 });
