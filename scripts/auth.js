@@ -19,9 +19,10 @@
   /* ============ HELPERS ============ */
   function setAuthMessage(msg, isError) {
     const el = $("authMessage");
-    if (!el) return;
-    el.textContent = msg || "";
-    el.style.color = isError ? "#ff9b9b" : "#22c55e";
+    if (el) {
+      el.textContent = msg || "";
+      el.style.color = isError ? "#ff9b9b" : "#22c55e";
+    }
   }
 
   function setCloudStatus(text, statusType) {
@@ -62,7 +63,9 @@
       // Auth state listener
       authMod.onAuthStateChanged(state.firebaseAuth, async function (user) {
         state.currentUser = user;
+        window.CV_USER = user; // Global check for silent button
         await handleAuthState(user);
+        window.dispatchEvent(new Event('authStateChanged')); // Notify UI
       });
 
       console.log("🔥 Firebase initialized");
@@ -84,6 +87,7 @@
       const name = user.displayName || (user.email || "User").split("@")[0];
 
       if (userBox) userBox.classList.add("on");
+      if (userBox) userBox.style.display = "flex";
       if (loginBtn) loginBtn.style.display = "none";
 
       const nameEl = $("authUserName");
@@ -98,7 +102,7 @@
 
       if (avatar) {
         if (user.photoURL) {
-          avatar.innerHTML = '<img src="' + user.photoURL + '" alt="avatar">';
+          avatar.innerHTML = '<img src="' + user.photoURL + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
         } else {
           avatar.textContent = name.charAt(0).toUpperCase();
         }
@@ -110,6 +114,7 @@
       setCloudStatus("☁ Synced", "ok");
     } else {
       if (userBox) userBox.classList.remove("on");
+      if (userBox) userBox.style.display = "none";
       if (loginBtn) loginBtn.style.display = "inline-block";
 
       const status = $("authStatus");
@@ -136,21 +141,18 @@
       if (snap.exists()) {
         const data = snap.data();
         if (Array.isArray(data.movies) && data.movies.length > 0) {
-          // Cloud wins if it has more movies
           if (data.movies.length >= state.vault.length) {
             state.vault = data.movies;
             saveLocal();
             if (window.CV_APP && window.CV_APP.renderAll) window.CV_APP.renderAll();
             if (window.CV_APP && window.CV_APP.toast) window.CV_APP.toast("✓ Vault synced from cloud");
           } else {
-            // Local has more — push to cloud
             await saveCloudVault();
           }
         } else {
           await saveCloudVault();
         }
       } else {
-        // First login — push local vault
         await saveCloudVault();
       }
     } catch (err) {
@@ -181,16 +183,12 @@
     }
   }
 
-  /* =========================================================
-     SCHEDULED CLOUD SAVE (debounced)
-  ========================================================= */
   function scheduleCloudSave() {
     if (!state.currentUser) return;
     clearTimeout(state.cloudSaveTimer);
     state.cloudSaveTimer = setTimeout(saveCloudVault, CFG.APP_CONFIG.cloudSaveDebounce);
   }
 
-  /* ============ LOCAL STORAGE ============ */
   function saveLocal() {
     try {
       localStorage.setItem(CFG.STORAGE_KEYS.VAULT, JSON.stringify(state.vault));
@@ -198,83 +196,39 @@
   }
 
   /* =========================================================
-     AUTH UI
+     EMAIL / PASSWORD SUBMIT (GATEWAY FORM)
   ========================================================= */
-  function openAuth() {
-    const overlay = $("authOverlay");
-    if (overlay) {
-      overlay.classList.add("open");
-      overlay.setAttribute("aria-hidden", "false");
-    }
-  }
-
-  function closeAuth() {
-    const overlay = $("authOverlay");
-    if (overlay) {
-      overlay.classList.remove("open");
-      overlay.setAttribute("aria-hidden", "true");
-    }
-    setAuthMessage("");
-  }
-
-  function setAuthMode(mode) {
-    document.querySelectorAll(".auth-tab").forEach(function (t) {
-      t.classList.toggle("active", t.dataset.authTab === mode);
-    });
-
-    const isSignup = mode === "signup";
-    const titleEl = $("authTitle");
-    const subEl = $("authSubtitle");
-    const nameField = $("authNameField");
-    const submitBtn = $("authSubmit");
-
-    if (titleEl) titleEl.textContent = isSignup ? "Create Account" : "Welcome Back";
-    if (subEl) subEl.textContent = isSignup
-      ? "Start building your personal movie vault."
-      : "Sign in to sync your vault across devices.";
-    if (nameField) nameField.style.display = isSignup ? "flex" : "none";
-    if (submitBtn) submitBtn.textContent = isSignup ? "Create Account" : "Login";
-
-    const nameInput = $("authName");
-    if (nameInput) nameInput.required = isSignup;
-
-    setAuthMessage("");
-  }
-
-  /* =========================================================
-     EMAIL / PASSWORD SUBMIT
-  ========================================================= */
-  async function handleAuthSubmit(event) {
-    event.preventDefault();
-
+  async function handleGatewayAuth(isLoginMode) {
     if (!state.firebaseAuth) {
-      setAuthMessage("Firebase not ready. Refresh and try again.", true);
+      if(window.CV_APP) window.CV_APP.toast("Auth system loading. Please wait...", true);
       return;
     }
 
-    const activeTab = document.querySelector(".auth-tab.active");
-    const mode = activeTab ? activeTab.dataset.authTab : "login";
-    const emailEl = $("authEmail");
-    const passEl = $("authPassword");
-    const nameEl = $("authName");
+    const email = $("gatewayEmail").value.trim();
+    const password = $("gatewayPassword").value;
+    const name = $("gatewayName") ? $("gatewayName").value.trim() : "";
 
-    const email = emailEl ? emailEl.value.trim() : "";
-    const password = passEl ? passEl.value : "";
-    const name = nameEl ? nameEl.value.trim() : "";
+    if (!email || !password) {
+      if(window.CV_APP) window.CV_APP.toast("Please enter email and password.", true);
+      return;
+    }
 
-    const submitBtn = $("authSubmit");
-    if (submitBtn) submitBtn.disabled = true;
-
-    setAuthMessage("Please wait…");
+    const submitBtn = $("gatewaySubmitBtn");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Please wait...";
+    }
 
     try {
       const { authMod, dbMod } = state.firebaseModules;
 
-      if (mode === "signup") {
+      if (isLoginMode) {
+        await authMod.signInWithEmailAndPassword(state.firebaseAuth, email, password);
+        if(window.CV_APP) window.CV_APP.toast("✓ Logged in!");
+      } else {
         const cred = await authMod.createUserWithEmailAndPassword(state.firebaseAuth, email, password);
-        if (name) {
-          await authMod.updateProfile(cred.user, { displayName: name });
-        }
+        if (name) await authMod.updateProfile(cred.user, { displayName: name });
+        
         await dbMod.setDoc(
           dbMod.doc(state.firebaseDb, "users", cred.user.uid),
           {
@@ -286,40 +240,40 @@
           },
           { merge: true }
         );
-        setAuthMessage("✓ Account created!", false);
-      } else {
-        await authMod.signInWithEmailAndPassword(state.firebaseAuth, email, password);
-        setAuthMessage("✓ Logged in!", false);
+        if(window.CV_APP) window.CV_APP.toast("✓ Account created!");
       }
 
-      setTimeout(closeAuth, 700);
+      setTimeout(() => { window.location.reload(); }, 800);
     } catch (err) {
       const msgs = {
         "auth/invalid-credential": "Email or password is incorrect.",
         "auth/email-already-in-use": "Email already registered. Try login.",
         "auth/weak-password": "Password must be at least 6 characters.",
-        "auth/invalid-email": "Please enter a valid email.",
-        "auth/network-request-failed": "Network error. Check your internet.",
-        "auth/operation-not-allowed": "Enable Email/Password in Firebase Console.",
-        "auth/unauthorized-domain": "Domain not authorized in Firebase Console.",
-        "auth/too-many-requests": "Too many attempts. Try again later."
+        "auth/invalid-email": "Please enter a valid email."
       };
-      setAuthMessage(msgs[err.code] || err.message, true);
+      if(window.CV_APP) window.CV_APP.toast(msgs[err.code] || err.message, true);
     } finally {
-      if (submitBtn) submitBtn.disabled = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = isLoginMode ? "Login" : "Sign Up";
+      }
     }
   }
 
   /* =========================================================
-     GOOGLE SIGN-IN
+     GOOGLE SIGN-IN (GATEWAY FORM)
   ========================================================= */
-  async function handleGoogleSignIn() {
+  async function handleGatewayGoogleAuth() {
     if (!state.firebaseAuth) {
-      setAuthMessage("Firebase not ready. Refresh and try again.", true);
+      if(window.CV_APP) window.CV_APP.toast("Auth system loading. Please wait...", true);
       return;
     }
 
-    setAuthMessage("Opening Google…");
+    const btn = $("gatewayGoogleBtn");
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = "Opening...";
+    }
 
     try {
       const { authMod, dbMod } = state.firebaseModules;
@@ -342,19 +296,15 @@
         { merge: true }
       );
 
-      setAuthMessage("✓ Signed in!", false);
-      setTimeout(closeAuth, 700);
+      if(window.CV_APP) window.CV_APP.toast("✓ Signed in with Google!");
+      setTimeout(() => { window.location.reload(); }, 800);
     } catch (err) {
-      const msgs = {
-        "auth/popup-blocked": "Popup blocked. Allow popups for this site.",
-        "auth/popup-closed-by-user": "Sign-in cancelled.",
-        "auth/unauthorized-domain": "Domain not authorized. Add your GitHub domain in Firebase.",
-        "auth/operation-not-allowed": "Enable Google sign-in in Firebase Console.",
-        "auth/account-exists-with-different-credential": "Email already registered with a different method.",
-        "auth/cancelled-popup-request": "Only one popup allowed at a time."
-      };
-      setAuthMessage(msgs[err.code] || err.message, true);
-      console.error("Google sign-in error:", err);
+      if(window.CV_APP) window.CV_APP.toast("❌ " + err.message.replace("Firebase: ", ""), true);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg> Continue with Google';
+      }
     }
   }
 
@@ -366,32 +316,37 @@
     try {
       await state.firebaseModules.authMod.signOut(state.firebaseAuth);
       if (window.CV_APP && window.CV_APP.toast) window.CV_APP.toast("Logged out");
+      setTimeout(() => window.location.reload(), 500);
     } catch (err) {
       console.error("Logout failed:", err);
     }
   }
 
   /* =========================================================
-     BIND UI
+     BIND UI (Gateway + Old Modals)
   ========================================================= */
   function bindAuthUI() {
-    const openBtn = $("authOpenBtn");
-    const closeBtn = $("authCloseBtn");
-    const overlay = $("authOverlay");
-
-    if (openBtn) openBtn.addEventListener("click", openAuth);
-    if (closeBtn) closeBtn.addEventListener("click", closeAuth);
-    if (overlay) {
-      overlay.addEventListener("click", function (e) {
-        if (e.target === overlay) closeAuth();
+    // Gateway Form Submit
+    const gatewaySubmit = $("gatewaySubmitBtn");
+    if (gatewaySubmit) {
+      gatewaySubmit.addEventListener('click', () => {
+        const isLogin = gatewaySubmit.textContent.toLowerCase().includes("login");
+        handleGatewayAuth(isLogin);
       });
     }
 
-    document.querySelectorAll(".auth-tab").forEach(function (tab) {
-      tab.addEventListener("click", function () {
-        setAuthMode(tab.dataset.authTab);
-      });
-    });
+    // Gateway Google Button
+    const gatewayGoogle = $("gatewayGoogleBtn");
+    if (gatewayGoogle) {
+      gatewayGoogle.addEventListener('click', handleGatewayGoogleAuth);
+    }
+
+    // Old Modal Bindings (Just in case)
+    const openBtn = $("authOpenBtn");
+    if (openBtn) openBtn.addEventListener("click", openAuth);
+    
+    const closeBtn = $("authCloseBtn");
+    if (closeBtn) closeBtn.addEventListener("click", closeAuth);
 
     const form = $("authForm");
     if (form) form.addEventListener("submit", handleAuthSubmit);
@@ -403,19 +358,45 @@
     if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
   }
 
+  // Old modal functions (kept for compatibility)
+  function openAuth() {
+    const overlay = $("authOverlay");
+    if (overlay) { overlay.classList.add("open"); overlay.setAttribute("aria-hidden", "false"); }
+  }
+  function closeAuth() {
+    const overlay = $("authOverlay");
+    if (overlay) { overlay.classList.remove("open"); overlay.setAttribute("aria-hidden", "true"); }
+  }
+  async function handleAuthSubmit(event) {
+    event.preventDefault();
+    // Fallback to gateway handler if old form is used
+    handleGatewayAuth(false); 
+  }
+  async function handleGoogleSignIn() {
+    handleGatewayGoogleAuth();
+  }
+
   /* =========================================================
      EXPORTS
-  ========================================================= */
+  ========================================================== */
   window.CV_AUTH = {
     init: initFirebase,
     bindUI: bindAuthUI,
     openAuth,
     closeAuth,
-    setAuthMode,
     saveCloudVault,
     loadCloudVault,
-    scheduleCloudSave
+    scheduleCloudSave,
+    handleLogout
   };
+
+  // Auto Init
+  initFirebase();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindAuthUI);
+  } else {
+    bindAuthUI();
+  }
 
   console.log("🎬 CineVault Auth module loaded");
 
