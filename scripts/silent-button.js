@@ -55,65 +55,133 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // Handle Gateway Submit
+  // Handle Gateway Submit (Direct Firebase Auth Call)
   if (gatewaySubmit) {
     gatewaySubmit.addEventListener('click', async () => {
-      const email = document.getElementById('gatewayEmail').value;
+      const email = document.getElementById('gatewayEmail').value.trim();
       const password = document.getElementById('gatewayPassword').value;
+      const name = document.getElementById('gatewayName').value.trim();
       
-      // Aapki auth.js file ka Form submit function call karenge
-      const fakeEvent = { preventDefault: () => {} };
-      const authEmail = document.getElementById('authEmail');
-      const authPassword = document.getElementById('authPassword');
-      const authName = document.getElementById('authName');
+      if (!email || !password) {
+        if(window.CV_APP) window.CV_APP.toast("Please enter email and password.", true);
+        return;
+      }
       
-      if (authEmail && authPassword) {
-        authEmail.value = email;
-        authPassword.value = password;
-        if (document.getElementById('gatewayName').value) {
-          authName.value = document.getElementById('gatewayName').value;
-        }
+      gatewaySubmit.textContent = "Please wait...";
+      gatewaySubmit.disabled = true;
 
-        // Check karo ki mode sahi hai
-        const tabs = document.querySelectorAll('.auth-tab');
-        tabs.forEach(t => {
-           if (isLoginMode && t.dataset.authTab === 'login') t.click();
-           if (!isLoginMode && t.dataset.authTab === 'signup') t.click();
-        });
+      try {
+        // Check if Firebase is loaded by the auth.js script
+        if (window.CV_AUTH && window.CV_AUTH.state && window.CV_AUTH.state.firebaseAuth) {
+          const { authMod, dbMod } = window.CV_AUTH.state.firebaseModules;
+          const auth = window.CV_AUTH.state.firebaseAuth;
+          const db = window.CV_AUTH.state.firebaseDb;
 
-        // Purane form ko submit karo
-        const authForm = document.getElementById('authForm');
-        if (authForm) {
-          authForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          if (isLoginMode) {
+            // LOGIN
+            await authMod.signInWithEmailAndPassword(auth, email, password);
+            if(window.CV_APP) window.CV_APP.toast("✓ Logged in successfully!");
+          } else {
+            // SIGN UP
+            const cred = await authMod.createUserWithEmailAndPassword(auth, email, password);
+            if (name) await authMod.updateProfile(cred.user, { displayName: name });
+            
+            // Create user in Firestore
+            if (db) {
+              await dbMod.setDoc(
+                dbMod.doc(db, "users", cred.user.uid),
+                {
+                  uid: cred.user.uid,
+                  email: email,
+                  displayName: name || email.split("@")[0],
+                  role: "user",
+                  createdAt: dbMod.serverTimestamp()
+                },
+                { merge: true }
+              );
+            }
+            if(window.CV_APP) window.CV_APP.toast("✓ Account created successfully!");
+          }
           
-          // Success ke baad modal band karo
-          setTimeout(() => {
-            gatewayModal.classList.remove('open');
-            window.location.reload();
-          }, 1500);
-        }
-      }
-    });
-  }
-
-  // GOOGLE SIGN IN FIX
-  if (gatewayGoogleBtn) {
-    gatewayGoogleBtn.addEventListener('click', () => {
-      if(window.CV_SOUNDS) window.CV_SOUNDS.play('click', 0.2);
-      const realGoogleBtn = document.getElementById('googleSignInBtn');
-      if (realGoogleBtn) {
-        realGoogleBtn.click();
-        setTimeout(() => {
+          // Success Animation & Close
+          if(window.CV_SOUNDS) window.CV_SOUNDS.play('success', 0.4);
           gatewayModal.classList.remove('open');
-          window.location.reload();
-        }, 2000);
+          
+          // Reload page to update UI (button will change to ENTER)
+          setTimeout(() => window.location.reload(), 1000); 
+          
+        } else {
+          if(window.CV_APP) window.CV_APP.toast("Auth system not ready. Please refresh.", true);
+        }
+      } catch (err) {
+        let msg = err.message;
+        if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') msg = "Incorrect email or password.";
+        if (err.code === 'auth/email-already-in-use') msg = "Email already registered. Try logging in.";
+        if (err.code === 'auth/weak-password') msg = "Password must be at least 6 characters.";
+        if(window.CV_APP) window.CV_APP.toast("❌ " + msg, true);
+      } finally {
+        gatewaySubmit.textContent = isLoginMode ? "Login" : "Sign Up";
+        gatewaySubmit.disabled = false;
       }
     });
   }
 
-  // Firebase Auth State Check
+  // Handle Google Sign-In (Direct Firebase Auth Call)
+  if (gatewayGoogleBtn) {
+    gatewayGoogleBtn.addEventListener('click', async () => {
+      if(window.CV_SOUNDS) window.CV_SOUNDS.play('click', 0.2);
+      
+      if (window.CV_AUTH && window.CV_AUTH.state && window.CV_AUTH.state.firebaseAuth) {
+        try {
+          const { authMod, dbMod } = window.CV_AUTH.state.firebaseModules;
+          const auth = window.CV_AUTH.state.firebaseAuth;
+          const db = window.CV_AUTH.state.firebaseDb;
+
+          const provider = new authMod.GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: "select_account" });
+
+          const result = await authMod.signInWithPopup(auth, provider);
+          const user = result.user;
+
+          // Save user data to Firestore
+          if (db) {
+            await dbMod.setDoc(
+              dbMod.doc(db, "users", user.uid),
+              {
+                uid: user.uid,
+                email: user.email || "",
+                displayName: user.displayName || "",
+                photoURL: user.photoURL || "",
+                role: "user",
+                updatedAt: dbMod.serverTimestamp()
+              },
+              { merge: true }
+            );
+          }
+
+          if(window.CV_SOUNDS) window.CV_SOUNDS.play('success', 0.4);
+          if(window.CV_APP) window.CV_APP.toast("✓ Signed in with Google!");
+          
+          gatewayModal.classList.remove('open');
+          setTimeout(() => window.location.reload(), 1000);
+
+        } catch (err) {
+          console.error("Google Auth Error:", err);
+          let msg = err.message;
+          if (err.code === 'auth/popup-blocked') msg = "Popup blocked. Allow popups.";
+          if (err.code === 'auth/popup-closed-by-user') msg = "Sign-in cancelled.";
+          if(window.CV_APP) window.CV_APP.toast("❌ " + msg, true);
+        }
+      } else {
+         if(window.CV_APP) window.CV_APP.toast("Auth system not ready.", true);
+      }
+    });
+  }
+
+  // Firebase Auth State Check (Update Button Text on Load)
   function updateButtonState() {
     const authBox = document.getElementById('authUserBox');
+    // Check window.CV.currentUser which is set by auth.js
     if (window.CV && window.CV.currentUser) {
       label.textContent = "ENTER";
       btn.setAttribute('aria-label', 'Enter CineVault');
@@ -125,6 +193,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
   
+  // Listen for auth changes
   window.addEventListener('authStateChanged', updateButtonState);
   setTimeout(updateButtonState, 1500); 
 
@@ -268,7 +337,6 @@ document.addEventListener("DOMContentLoaded", function() {
   const logoutBtn = document.getElementById('authLogoutBtn');
   if(logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      const realLogoutBtn = document.getElementById('authLogoutBtn');
       if (window.CV_AUTH && window.CV_AUTH.handleLogout) {
         window.CV_AUTH.handleLogout().then(() => {
           window.location.reload();
