@@ -1,17 +1,117 @@
 /* =========================================================
-   CINEVAULT SILENT BUTTON LOGIC
+   CINEVAULT SILENT BUTTON LOGIC + GATEWAY
 ========================================================= */
 document.addEventListener("DOMContentLoaded", function() {
   const btn = document.getElementById('cv-silent-btn');
-  if (!btn) return;
+  const label = document.getElementById('cv-btn-label');
+  if (!btn || !label) return;
 
   const prints = document.getElementById('cv-prints');
   const grainEl = document.getElementById('cv-grain');
   const stage = document.querySelector('.cv-signup-wrapper .stage');
   
+  // Gateway Auth Modal Elements
+  const gatewayModal = document.getElementById('authGatewayModal');
+  const gatewayClose = document.getElementById('gatewayClose');
+  const gatewaySubmit = document.getElementById('gatewaySubmitBtn');
+  const gatewaySwitch = document.getElementById('gatewaySwitchBtn');
+  const gatewayNameField = document.getElementById('gatewayNameField');
+  const gatewayTitle = document.querySelector('.gateway-title');
+  const gatewaySub = document.querySelector('.gateway-sub');
+  
+  let isLoginMode = false;
+
+  // Toggle between Login and Signup in Gateway
+  if (gatewaySwitch) {
+    gatewaySwitch.addEventListener('click', () => {
+      isLoginMode = !isLoginMode;
+      if (isLoginMode) {
+        gatewayTitle.textContent = "Welcome Back";
+        gatewaySub.textContent = "Login to continue your movie journey.";
+        gatewaySubmit.textContent = "Login";
+        gatewayNameField.style.display = "none";
+        gatewaySwitch.textContent = "Sign Up";
+        gatewaySwitch.previousSibling.textContent = "Don't have an account? ";
+      } else {
+        gatewayTitle.textContent = "Join CineVault";
+        gatewaySub.textContent = "Create an account to start tracking your universe.";
+        gatewaySubmit.textContent = "Sign Up";
+        gatewayNameField.style.display = "block";
+        gatewaySwitch.textContent = "Login";
+        gatewaySwitch.previousSibling.textContent = "Already have an account? ";
+      }
+    });
+  }
+
+  // Close Gateway
+  if (gatewayClose) {
+    gatewayClose.addEventListener('click', () => {
+      gatewayModal.classList.remove('open');
+    });
+  }
+
+  // Handle Gateway Submit (Calls Firebase Auth directly via CV_AUTH)
+  if (gatewaySubmit) {
+    gatewaySubmit.addEventListener('click', async () => {
+      const email = document.getElementById('gatewayEmail').value;
+      const password = document.getElementById('gatewayPassword').value;
+      const name = document.getElementById('gatewayName').value;
+      
+      if (!email || !password) {
+        alert("Please enter email and password.");
+        return;
+      }
+      
+      gatewaySubmit.textContent = "Please wait...";
+      gatewaySubmit.disabled = true;
+
+      try {
+        if (window.CV_AUTH && window.CV_AUTH.state && window.CV_AUTH.state.firebaseAuth) {
+          const { authMod } = window.CV_AUTH.state.firebaseModules;
+          const auth = window.CV_AUTH.state.firebaseAuth;
+
+          if (isLoginMode) {
+            await authMod.signInWithEmailAndPassword(auth, email, password);
+          } else {
+            const cred = await authMod.createUserWithEmailAndPassword(auth, email, password);
+            if (name) await authMod.updateProfile(cred.user, { displayName: name });
+          }
+          
+          gatewayModal.classList.remove('open');
+          window.location.reload(); // Quick refresh to load state
+        } else {
+          // Fallback if Firebase not ready
+          alert("Auth system loading. Please try again.");
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      } finally {
+        gatewaySubmit.textContent = isLoginMode ? "Login" : "Sign Up";
+        gatewaySubmit.disabled = false;
+      }
+    });
+  }
+
+  // Firebase Auth State Check (Change Button Text)
+  function updateButtonState() {
+    if (window.CV && window.CV.currentUser) {
+      label.textContent = "ENTER";
+      btn.setAttribute('aria-label', 'Enter CineVault');
+    } else {
+      label.textContent = "SIGN UP";
+      btn.setAttribute('aria-label', 'Sign up');
+    }
+  }
+  
+  // Listen for auth changes globally
+  window.addEventListener('authStateChanged', updateButtonState);
+  setTimeout(updateButtonState, 1500); // Initial check after load
+
+  /* =========================================================
+     BUTTON ANIMATION LOGIC (Grain, Potion, Fingerprint)
+  ========================================================= */
   function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
   
-  // 1. Grain Texture
   (function makeGrain(){
     const W=Math.round(305*2),H=Math.round(116*2),c=document.createElement('canvas');c.width=W;c.height=H;
     const g=c.getContext('2d'),img=g.createImageData(W,H),d=img.data,r=mulberry32(1337);
@@ -19,7 +119,6 @@ document.addEventListener("DOMContentLoaded", function() {
     g.putImageData(img,0,0);grainEl.style.backgroundImage='url('+c.toDataURL()+')';
   })();
 
-  // 2. Liquid Potion Animation
   const potion=(function(){
     const cv=document.getElementById('cv-potion'),S=84,D=2,g=cv.getContext('2d');g.scale(D,D);
     const rnd=mulberry32(4242);
@@ -58,7 +157,6 @@ document.addEventListener("DOMContentLoaded", function() {
       step(n){for(let i=0;i<n;i++)draw(1)}};
   })();
 
-  // 3. Fingerprint Generator
   function makePrint(seed){
     const r=mulberry32(seed);const W=110,H=140,D=2;
     const c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');
@@ -94,7 +192,6 @@ document.addEventListener("DOMContentLoaded", function() {
     return c;
   }
 
-  // 4. Interaction Logic
   let seed=7;
   function addPrint(x,y,rot,hold){
     const el=document.createElement('div');el.className='print';seed+=1;
@@ -120,12 +217,17 @@ document.addEventListener("DOMContentLoaded", function() {
       clearTimeout(sentTimer);
       sentTimer=setTimeout(()=>btn.classList.remove('sent'),480);
       
-      // OPEN AUTH MODAL ON CLICK
-      setTimeout(() => {
-        if(window.CV_AUTH && window.CV_AUTH.openAuth) {
-          window.CV_AUTH.openAuth();
-        }
-      }, 400);
+      // MAGIC HAPPENS HERE
+      if (window.CV && window.CV.currentUser) {
+        // Agar user logged in hai, toh andar bhej do
+        document.getElementById('mainHeroSection').scrollIntoView({ behavior: 'smooth' });
+        if(window.CV_APP && window.CV_APP.toast) window.CV_APP.toast("Welcome back to CineVault! 🍿");
+      } else {
+        // Agar naya user hai, toh Gateway Auth Modal kholo
+        setTimeout(() => {
+          gatewayModal.classList.add('open');
+        }, 400);
+      }
     }
     setState();
   }
