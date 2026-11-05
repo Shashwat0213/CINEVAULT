@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", function() {
   const gatewayNameField = document.getElementById('gatewayNameField');
   const gatewayTitle = document.getElementById('gatewayTitle');
   const gatewaySub = document.getElementById('gatewaySub');
+  const gatewayGoogleBtn = document.getElementById('gatewayGoogleBtn');
   
   let isLoginMode = false;
 
@@ -54,45 +55,58 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // Handle Gateway Submit (Calls Firebase Auth directly via CV_AUTH)
+  // Handle Gateway Submit
   if (gatewaySubmit) {
     gatewaySubmit.addEventListener('click', async () => {
       const email = document.getElementById('gatewayEmail').value;
       const password = document.getElementById('gatewayPassword').value;
-      const name = document.getElementById('gatewayName').value;
       
-      if (!email || !password) {
-        if(window.CV_APP) window.CV_APP.toast("Please enter email and password.", true);
-        return;
-      }
+      // Aapki auth.js file ka Form submit function call karenge
+      const fakeEvent = { preventDefault: () => {} };
+      const authEmail = document.getElementById('authEmail');
+      const authPassword = document.getElementById('authPassword');
+      const authName = document.getElementById('authName');
       
-      gatewaySubmit.textContent = "Please wait...";
-      gatewaySubmit.disabled = true;
-
-      try {
-        if (window.CV_AUTH && window.CV_AUTH.state && window.CV_AUTH.state.firebaseAuth) {
-          const { authMod } = window.CV_AUTH.state.firebaseModules;
-          const auth = window.CV_AUTH.state.firebaseAuth;
-
-          if (isLoginMode) {
-            await authMod.signInWithEmailAndPassword(auth, email, password);
-          } else {
-            const cred = await authMod.createUserWithEmailAndPassword(auth, email, password);
-            if (name) await authMod.updateProfile(cred.user, { displayName: name });
-          }
-          
-          gatewayModal.classList.remove('open');
-          if(window.CV_SOUNDS) window.CV_SOUNDS.play('success', 0.4);
-          
-          setTimeout(() => window.location.reload(), 800); 
-        } else {
-          if(window.CV_APP) window.CV_APP.toast("Auth system loading. Please try again.", true);
+      if (authEmail && authPassword) {
+        authEmail.value = email;
+        authPassword.value = password;
+        if (document.getElementById('gatewayName').value) {
+          authName.value = document.getElementById('gatewayName').value;
         }
-      } catch (err) {
-        if(window.CV_APP) window.CV_APP.toast("Error: " + err.message, true);
-      } finally {
-        gatewaySubmit.textContent = isLoginMode ? "Login" : "Sign Up";
-        gatewaySubmit.disabled = false;
+
+        // Check karo ki mode sahi hai
+        const tabs = document.querySelectorAll('.auth-tab');
+        tabs.forEach(t => {
+           if (isLoginMode && t.dataset.authTab === 'login') t.click();
+           if (!isLoginMode && t.dataset.authTab === 'signup') t.click();
+        });
+
+        // Purane form ko submit karo
+        const authForm = document.getElementById('authForm');
+        if (authForm) {
+          authForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          
+          // Success ke baad modal band karo
+          setTimeout(() => {
+            gatewayModal.classList.remove('open');
+            window.location.reload();
+          }, 1500);
+        }
+      }
+    });
+  }
+
+  // GOOGLE SIGN IN FIX
+  if (gatewayGoogleBtn) {
+    gatewayGoogleBtn.addEventListener('click', () => {
+      if(window.CV_SOUNDS) window.CV_SOUNDS.play('click', 0.2);
+      const realGoogleBtn = document.getElementById('googleSignInBtn');
+      if (realGoogleBtn) {
+        realGoogleBtn.click();
+        setTimeout(() => {
+          gatewayModal.classList.remove('open');
+          window.location.reload();
+        }, 2000);
       }
     });
   }
@@ -254,7 +268,8 @@ document.addEventListener("DOMContentLoaded", function() {
   const logoutBtn = document.getElementById('authLogoutBtn');
   if(logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      if(window.CV_AUTH && window.CV_AUTH.handleLogout) {
+      const realLogoutBtn = document.getElementById('authLogoutBtn');
+      if (window.CV_AUTH && window.CV_AUTH.handleLogout) {
         window.CV_AUTH.handleLogout().then(() => {
           window.location.reload();
         });
