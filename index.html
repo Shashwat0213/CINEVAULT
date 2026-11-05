@@ -25,6 +25,8 @@
 <link rel="stylesheet" href="styles/pro.css">
 <link rel="stylesheet" href="styles/custom.css">
 <link rel="stylesheet" href="styles/ads.css">
+<!-- Naya CSS yahan link kiya hai -->
+<link rel="stylesheet" href="styles/silent-button.css">
 </head>
 <body data-accent="gold">
 
@@ -87,6 +89,47 @@
       <button class="btn" id="heroVaultBtn">📋 My Vault</button>
       <button class="btn" id="heroRandomBtn">🎲 Random Pick</button>
     </div>
+    
+    <!-- ========================================== -->
+    <!-- NAYA SILENT BUTTON YAHAN ADD KIYA HAI      -->
+    <!-- ========================================== -->
+    <div class="cv-signup-wrapper">
+      <div class="stage">
+        <div class="btn" id="cv-silent-btn" role="button" tabindex="0" aria-label="Sign up">
+          <div class="sh sh-idle"></div>
+          <div class="sh sh-hover"></div>
+          <div class="body">
+            <div class="grain" id="cv-grain"></div>
+            <div class="endl"></div>
+            <div class="endr"></div>
+            <div class="rim"></div>
+            <div class="well"></div>
+            <div class="gap"></div>
+            <div class="gapb"></div>
+            <div class="pressdark"></div>
+            <div class="sphere">
+              <div class="sph-hover"></div>
+              <div class="sph-press"></div>
+              <canvas class="potion" id="cv-potion" width="168" height="168"></canvas>
+              <div class="glow"></div>
+              <div class="rimlite"></div>
+              <div class="rimglow"></div>
+              <div class="blob"></div>
+              <div class="ring"><svg viewBox="0 0 84 84"><circle cx="42" cy="42" r="35"/></svg></div>
+              <div class="icon"><svg viewBox="0 0 84 84"><g class="mail">
+                <path class="flapo" d="M-11,-7.5 L0,-16 L11,-7.5"/>
+                <g class="letter"><rect x="-7.5" y="-5" width="15" height="12" rx="1.5"/><line x1="-4.5" y1="-1.5" x2="4.5" y2="-1.5"/><line x1="-4.5" y1="1.8" x2="2" y2="1.8"/></g>
+                <rect class="env" x="-11" y="-7.5" width="22" height="15" rx="2.5"/>
+                <path class="flapc" d="M-11,-5.5 L0,2.5 L11,-5.5"/>
+              </g></svg></div>
+            </div>
+            <div class="label">SIGN UP</div>
+            <div class="prints" id="cv-prints"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ========================================== -->
   </section>
 
   <!-- THEME PICKER -->
@@ -696,6 +739,8 @@
 <script src="scripts/custom.js"></script>
 <script src="scripts/ads.js"></script>
 <script src="scripts/features.js"></script>
+<!-- Naya Button JS yahan link kiya hai -->
+<script src="scripts/silent-button.js"></script>
 
 <!-- Service Worker -->
 <script>
